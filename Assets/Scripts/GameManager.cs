@@ -56,7 +56,16 @@ public class GameManager : MonoBehaviour
     public TMP_Text cuacaText;
     public Slider energiSlider;
     public GameObject panelHasil;
-    public TMP_Text hasilText;
+    public TMP_Text hariText;
+    public TMP_Text airText;
+    public TMP_Text cahayaText;
+    public TMP_Text co2Text;
+    public TMP_Text oksigenText;
+    public TMP_Text nilaiAkhirText;
+    public TMP_Text skorTotalText;
+    public TMP_Text fotosintesisText;
+    public string cahayaString;
+    public string co2String;
 
     [Header("Button")]
     public Button buttonCO2;
@@ -123,7 +132,7 @@ public class GameManager : MonoBehaviour
     {
         waktuText.text = $"Hari {currentDay} - Jam {(currentHour < 10 ? "0" : "" )}{currentHour}:{(Mathf.RoundToInt(timer) < 10 ? "0" : "")}{Mathf.RoundToInt(timer)}";
         cuacaText.text = $"Cuaca: {cuacaHariIni}";
-        energiSlider.value = fotosintesisEnergy / 100f;
+        energiSlider.value = fotosintesisEnergy / 360f;
     }
 
     public void SerapCahaya()
@@ -167,11 +176,20 @@ public class GameManager : MonoBehaviour
 
     public void CuacaChanger()
     {
-        if (cuacaHariIni == Cuaca.Hujan || cahayaCount >= maxCahaya || isCahayaCooldown)
+        if (cuacaHariIni == Cuaca.Hujan)
         {
             buttonCahaya.interactable = false;
-            textCahaya.text = "Cooldown";
+            textCahaya.text = "Sedang Hujan";
 
+        } else if (cahayaCount >= maxCahaya)
+        {
+            buttonCahaya.interactable = false;
+            textCahaya.text = "Cahaya Terpenuhi";
+        }
+        else if (isCahayaCooldown)
+        {
+            buttonCahaya.interactable = false;
+            textCahaya.text = "Cooldown 2d";
         }
         else
         {
@@ -179,10 +197,20 @@ public class GameManager : MonoBehaviour
             textCahaya.text = "Serap Cahaya";
         }
 
-        if (cuacaHariIni == Cuaca.Polusi || co2Count >= maxCO2 || isCO2Cooldown)
+        if (cuacaHariIni == Cuaca.Polusi)
         {
             buttonCO2.interactable = false;
-            textCO2.text = "Cooldown";
+            textCO2.text = "Polusi Udara";
+        }
+        else if (co2Count >= maxCO2)
+        {
+            buttonCO2.interactable = false;
+            textCO2.text = "CO2 Terpenuhi";
+        }
+        else if (isCO2Cooldown)
+        {
+            buttonCO2.interactable = false;
+            textCO2.text = "Cooldown 3d";
         }
         else
         {
@@ -194,6 +222,8 @@ public class GameManager : MonoBehaviour
         {
             buttonAir.interactable = false;
             airCount += maxAir;
+            airTotal += maxAir;
+            TambahEnergi(8);
             textAir.text = "Air Terpenuhi";
         }
          else if (airCount >= maxAir)
@@ -206,19 +236,102 @@ public class GameManager : MonoBehaviour
             buttonAir.interactable = true;
             textAir.text = "Siram Air";
         }
+    }
+    public void TotalCahaya()
+    {
+        int persen = Mathf.RoundToInt(((float)cahayaTotal / 30) * 100f);
 
+        switch (persen)
+        {
+            case int n when (n < 10):
+                cahayaString = "Sangat Buruk";
+                Debug.Log("⚠️ Cahaya <10%");
+                break;
 
+            case int n when (n < 25):
+                cahayaString = "Buruk";
+                Debug.Log("⚠️ Cahaya <25%");
+                break;
+
+            case int n when (n < 50):
+                cahayaString = "Kurang Baik";
+                Debug.Log("⚠️ Cahaya <50%");
+                break;
+
+            case int n when (n < 75):
+                cahayaString = "Cukup";
+                Debug.Log("⚠️ Cahaya <75%");
+                break;
+
+            case int n when (n < 90):
+                cahayaString = "Baik";
+                Debug.Log("✅ Cahaya Baik");
+                break;
+
+            case int n when (n <= 100):
+                cahayaString = "Optimal";
+                Debug.Log("🌞 Cahaya Optimal");
+                break;
+
+            default:
+                cahayaString = "Data tidak valid";
+                Debug.LogWarning("Nilai di luar jangkauan");
+                break;
+        }
+    }
+
+    public void TotalCO2()
+    {
+        int persen = Mathf.RoundToInt(((float)co2Total / 30) * 100f);
+
+        switch (persen)
+        {
+            case int n when (n < 10):
+                co2String = "Sangat Buruk";
+                Debug.Log("⚠️ Cahaya <10%");
+                break;
+
+            case int n when (n < 25):
+                co2String = "Buruk";
+                Debug.Log("⚠️ Cahaya <25%");
+                break;
+
+            case int n when (n < 50):
+                co2String = "Kurang Baik";
+                Debug.Log("⚠️ Cahaya <50%");
+                break;
+
+            case int n when (n < 75):
+                co2String = "Cukup";
+                Debug.Log("⚠️ Cahaya <75%");
+                break;
+
+            case int n when (n < 90):
+                co2String = "Baik";
+                Debug.Log("✅ Cahaya Baik");
+                break;
+
+            case int n when (n <= 100):
+                co2String = "Optimal";
+                Debug.Log("🌞 Cahaya Optimal");
+                break;
+
+            default:
+                co2String = "Data tidak valid";
+                Debug.LogWarning("Nilai di luar jangkauan");
+                break;
+        }
     }
 
     public void PlantChanger()
     {
         int index = 0;
 
-        if (levelTanaman <= 2) index = 0;
-        else if (levelTanaman <= 4) index = 1;
-        else if (levelTanaman <= 6) index = 2;
-        else if (levelTanaman <= 8) index = 3;
-        else if (levelTanaman <= 10) index = 4;
+        if (fotosintesisEnergy <= 60) index = 0;
+        else if (fotosintesisEnergy <= 120) index = 1;
+        else if (fotosintesisEnergy <= 180) index = 2;
+        else if (fotosintesisEnergy <= 240) index = 3;
+        else if (fotosintesisEnergy <= 360) index = 4;
 
         for (int i = 0; i < objectPlant.Length; i++)
         {
@@ -309,7 +422,7 @@ public class GameManager : MonoBehaviour
     {
         fotosintesisEnergy += nilai;
         oksigenTotal += UnityEngine.Random.Range(1, 3); // Simulasi produksi O₂
-        fotosintesisEnergy = Mathf.Clamp(fotosintesisEnergy, 0, 100);
+        fotosintesisEnergy = Mathf.Clamp(fotosintesisEnergy, 0, 360);
     }
 
     void EndOfDay()
@@ -344,22 +457,34 @@ public class GameManager : MonoBehaviour
     void EndGame()
     {
         Time.timeScale = 0;
+        TotalCahaya();
+        TotalCO2();
 
-        string nilai = "C";
+        string nilai = "";
         int totalScore = fotosintesisEnergy;
 
-        if (totalScore >= 90) nilai = "A";
-        else if (totalScore >= 70) nilai = "B";
-        else if (totalScore >= 50) nilai = "C";
-        else if (totalScore >= 30) nilai = "D";
+        if (totalScore >= 360) nilai = "A";
+        else if (totalScore >= 240) nilai = "B";
+        else if (totalScore >= 180) nilai = "C";
+        else if (totalScore >= 120) nilai = "D";
         else nilai = "E";
 
         panelHasil.SetActive(true);
-        hasilText.text = $"Tanaman mencapai level {levelTanaman}/5\n" +
-                         $"Energi: {fotosintesisEnergy}\n" +
-                         $"Oksigen: {oksigenTotal}\n" +
-                         $"Hari Efektif: {currentDay - 1}\n" +
-                         $"Nilai Akhir: {nilai}\n" +
-                         $"Total Skor: {totalScore} \n";
+        //hasilText.text = $"Tanaman mencapai level {levelTanaman}/5\n" +
+        //                 $"Energi: {fotosintesisEnergy}\n" +
+        //                 $"Oksigen: {oksigenTotal}\n" +
+        //                 $"Hari Efektif: {currentDay - 1}\n" +
+        //                 $"Nilai Akhir: {nilai}\n" +
+        //                 $"Total Skor: {totalScore} \n";
+
+        hariText.text = "Hari bertahan hidup : " + currentDay + "/10";
+        airText.text = "Siraman Air : " + airTotal + "x";
+        cahayaText.text = "Serapan Cahaya : " + $"{cahayaString}" + " (" + Math.Round(((float)cahayaTotal / 30) * 100f) + "%" + ")" ;
+        co2Text.text = "Pengambilan C02 : " + $"{co2String}" + " (" + Math.Round(((float)co2Total / 30) * 100f) + "%" + ")" ;
+        oksigenText.text = "Jumlah oksigen dihasilkan : " + Math.Round(((float)oksigenTotal / 100) * 100f) + "%";
+        fotosintesisText.text = "Tingkat efisiensi : " + Math.Round(((float)fotosintesisEnergy / 360) * 100f) + "%";
+        nilaiAkhirText.text = "Nilai Akhir : " + nilai;
+        skorTotalText.text = "Total Skor : " + totalScore;
+
     }
 }

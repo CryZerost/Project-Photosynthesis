@@ -1569,6 +1569,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1151348982}
   - component: {fileID: 1151348984}
+  - component: {fileID: 1151348986}
   - component: {fileID: 1151348985}
   - component: {fileID: 1151348983}
   m_Layer: 5
@@ -1648,8 +1649,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sunObject: {fileID: 1151348981}
-  time: 1
+  time: 2
   scale: 1.35
+--- !u!114 &1151348986
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1151348981}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70a35530b55aa97459c9b723f00fc0d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sunObject: {fileID: 1151348981}
+  time: 10
+  add: 180
 --- !u!1 &1156084615
 GameObject:
   m_ObjectHideFlags: 0
