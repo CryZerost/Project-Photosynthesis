@@ -18,6 +18,8 @@ public class GameManager : MonoBehaviour
     public GameObject[] objectPlant;
     public GameObject[] objectRoot;
     public Sprite[] spriteSoil;
+    public GameObject fadeDay;
+    public TMP_Text fadeText;
     
 
     [Header("Waktu")]
@@ -33,6 +35,7 @@ public class GameManager : MonoBehaviour
     public int cahayaTotal = 0;
     public int airTotal = 0;
     public int levelTanaman = 1;
+    public int randomTotal = 0;
 
     [Header("Input Harian")]
     public int cahayaCount;
@@ -46,7 +49,8 @@ public class GameManager : MonoBehaviour
     [Header("Cooldown")]
     private bool isCahayaCooldown = false;
     private bool isCO2Cooldown = false;
-    
+    private bool isAirCooldown = false;
+   
    
     public enum Cuaca { Cerah, Mendung, Hujan, Polusi }
     public Cuaca cuacaHariIni;
@@ -54,7 +58,6 @@ public class GameManager : MonoBehaviour
     [Header("UI")]
     public TMP_Text waktuText;
     public TMP_Text cuacaText;
-    public Slider energiSlider;
     public GameObject panelHasil;
     public TMP_Text hariText;
     public TMP_Text airText;
@@ -67,6 +70,12 @@ public class GameManager : MonoBehaviour
     public string cahayaString;
     public string co2String;
 
+    [Header("UI Slider")]
+    public Slider energiSlider;
+    public Slider cahayaSlider;
+    public Slider airSlider;
+    public Slider co2Slider;
+
     [Header("Button")]
     public Button buttonCO2;
     public TMP_Text textCO2;
@@ -74,8 +83,28 @@ public class GameManager : MonoBehaviour
     public TMP_Text textCahaya;
     public Button buttonAir;
     public TMP_Text textAir;
-
     public TMP_Text skipDay;
+    public GameObject buttonSkip;
+
+
+    [Header("Effect 3 Utama")]
+    public Transform[] effectPosition;
+    public Transform targetPosition;
+    public GameObject[] effectObjects;
+    public GameObject effectMatahari;
+    public GameObject effectMatahariPos;
+    public GameObject effectAwan;
+    public GameObject effectAirPos;
+    public GameObject effectAir;
+    public GameObject effectAirPosTarget;
+    public GameObject effectSiram;
+    public GameObject effectSiramPos;
+
+    [Header("Audio")]
+    public AudioSource audioSource;
+    public AudioClip[] swooshClip;
+    public AudioClip co2Clip;
+    public AudioClip airClip;
 
     void Start()
     {
@@ -104,15 +133,21 @@ public class GameManager : MonoBehaviour
         currentHour++;
         if (currentHour >= 17)
         {
-            currentHour = 6;
-            EndOfDay();
-            currentDay++;
-            if (currentDay > 10)
+
+            if (currentDay == 10)
             {
                 EndGame();
                 return;
             }
-            ResetHarian();
+            else if (currentDay < 10)
+            {
+                currentHour = 6;
+                EndOfDay();
+                currentDay++;
+                FadeDay();
+                ResetHarian();
+            }
+
         }
 
         UpdateUI();
@@ -133,12 +168,39 @@ public class GameManager : MonoBehaviour
         waktuText.text = $"Hari {currentDay} - Jam {(currentHour < 10 ? "0" : "" )}{currentHour}:{(Mathf.RoundToInt(timer) < 10 ? "0" : "")}{Mathf.RoundToInt(timer)}";
         cuacaText.text = $"Cuaca: {cuacaHariIni}";
         energiSlider.value = fotosintesisEnergy / 360f;
+        cahayaSlider.value = cahayaTotal;
+        cahayaSlider.maxValue = cahayaTotal + randomTotal;
+        airSlider.value = airTotal;
+        airSlider.maxValue = airTotal + randomTotal;
+        co2Slider.value = co2Total;
+        co2Slider.maxValue = co2Total + randomTotal;
+
+        if (cuacaHariIni == Cuaca.Hujan)
+        {
+            effectMatahariPos.SetActive(false);
+        }
+        else
+        {
+            effectMatahariPos.SetActive(true);
+        }
+
+        if (cuacaHariIni == Cuaca.Mendung)
+        {
+            effectAwan.SetActive(true);
+        }
+        else
+        {
+            effectAwan.SetActive(false);
+        }
+
+
     }
 
     public void SerapCahaya()
     {
         cahayaCount++;
         cahayaTotal++;
+        EffectMathari();
         StartCoroutine(CahayaCooldown());
         TambahEnergi(5);
     }
@@ -154,22 +216,27 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            imageSoil.sprite = spriteSoil[1];
             StartCoroutine(KembalikanTanahKering());
         }
+        EffectAir();
         TambahEnergi(4);
     }
 
     IEnumerator KembalikanTanahKering()
     {
-        yield return new WaitForSeconds(1f);
+        isAirCooldown = true;
+        imageSoil.sprite = spriteSoil[1];
+        yield return new WaitForSeconds(2f);
+        isAirCooldown = false;
         imageSoil.sprite = spriteSoil[0];
+
     }
 
     public void SerapCO2()
     {
         co2Count++;
         co2Total++;
+        EffectSerapCO2();
         StartCoroutine(CO2Cooldown());
         TambahEnergi(3);
     }
@@ -230,6 +297,11 @@ public class GameManager : MonoBehaviour
         {
             buttonAir.interactable = false;
             textAir.text = "Air Terpenuhi";
+        }
+        else if (isAirCooldown)
+        {
+            buttonAir.interactable = false;
+            textAir.text = "Cooldown 2d";
         }
         else
         {
@@ -331,7 +403,7 @@ public class GameManager : MonoBehaviour
         else if (fotosintesisEnergy <= 120) index = 1;
         else if (fotosintesisEnergy <= 180) index = 2;
         else if (fotosintesisEnergy <= 240) index = 3;
-        else if (fotosintesisEnergy <= 360) index = 4;
+        else if (fotosintesisEnergy <= 300) index = 4;
 
         for (int i = 0; i < objectPlant.Length; i++)
         {
@@ -373,23 +445,10 @@ public class GameManager : MonoBehaviour
 
     public void SkipDay()
     {
-        if (currentDay >= 10)
+        if (currentDay == 10)
         {
-            //StopAllCoroutines();
-            //currentHour = 6;
-            //ResetHarian();
-            //currentDay = 1;
-            //fotosintesisEnergy = 0;
-            //levelTanaman = 0;
-            //Time.timeScale = 1;
-            //skipDay.text = "Skip the day";
-            //panelHasil.SetActive(false);
-            levelLoader.LoadLevel(1);
-        }
-        else if (currentDay == 9)
-        {
-            skipDay.text = "Restart game";
-            currentDay++;
+            skipDay.text = "No more day!";
+            buttonSkip.SetActive(false);
             EndGame();
             return;
         }
@@ -397,10 +456,38 @@ public class GameManager : MonoBehaviour
         {
             StopAllCoroutines();
             currentHour = 6;
+            randomTotal += UnityEngine.Random.Range(1, 2);
             EndOfDay();
             currentDay++;
+            FadeDay();
             ResetHarian();
         }
+    }
+
+    public void FadeDay()
+    {
+        StartCoroutine(FadeCooldown());
+        fadeText.text = "DAY " + currentDay;
+    }
+
+    IEnumerator FadeCooldown()
+    {
+        fadeDay.SetActive(true);
+        yield return new WaitForSeconds(2f);
+        fadeDay.SetActive(false);
+    }
+
+    public void ResetGame()
+    {
+        StopAllCoroutines();
+        currentHour = 6;
+        ResetHarian();
+        currentDay = 1;
+        fotosintesisEnergy = 0;
+        levelTanaman = 0;
+        Time.timeScale = 1;
+        skipDay.text = "Skip the day";
+        panelHasil.SetActive(false);
     }
 
     IEnumerator CahayaCooldown()
@@ -422,13 +509,14 @@ public class GameManager : MonoBehaviour
     {
         fotosintesisEnergy += nilai;
         oksigenTotal += UnityEngine.Random.Range(1, 3); // Simulasi produksi O₂
-        fotosintesisEnergy = Mathf.Clamp(fotosintesisEnergy, 0, 360);
+        fotosintesisEnergy = Mathf.Clamp(fotosintesisEnergy, 0, 300);
     }
 
     void EndOfDay()
     {
         if (fotosintesisEnergy >= currentDay * 10)
             levelTanaman = Mathf.Min(levelTanaman + 1, 10);
+
 
     }
 
@@ -440,6 +528,7 @@ public class GameManager : MonoBehaviour
         timer = 0f;
         isCO2Cooldown = false;
         isCahayaCooldown = false;
+        isAirCooldown = false;
         PlantChanger();
         SetCuacaBaru();
         BackgroundChanger();
@@ -454,6 +543,67 @@ public class GameManager : MonoBehaviour
         buttonAir.interactable = true;  
     }
 
+    public void EffectSerapCO2()
+    {
+        ShowSerapCO2();
+        audioSource.PlayOneShot(swooshClip[UnityEngine.Random.Range(0, swooshClip.Length - 1)]);
+        for (int i = 0; i < effectObjects.Length; i++)
+        {
+            effectObjects[i].transform.position = effectPosition[i].transform.position;
+        }
+
+        for (int i = 0; i < effectObjects.Length; i++)
+        {
+            LeanTween.move(effectObjects[i], targetPosition, 1f).setOnComplete(() => audioSource.PlayOneShot(co2Clip));
+        }
+
+        LeanTween.delayedCall(1f, () => HideSerapCO2());
+    }
+
+    public void EffectAir()
+    {
+        effectAir.transform.position = effectAirPosTarget.transform.position;
+        LeanTween.rotateZ(effectAir, -45f, 0.5f)
+            .setOnComplete(() => EffectSiram());
+
+    }
+
+    public void EffectSiram()
+    {
+        effectSiram.SetActive(true);
+        audioSource.PlayOneShot(airClip);
+        effectSiram.transform.position = effectSiramPos.transform.position;
+        LeanTween.move(effectSiram, targetPosition, 1f).setOnComplete(() => audioSource.PlayOneShot(co2Clip));
+        LeanTween.delayedCall(1f, () => effectSiram.SetActive(false));
+        LeanTween.rotateZ(effectAir, 0f, 0.5f).setDelay(1.5f)
+        .setOnComplete(() => effectAir.transform.position = effectAirPos.transform.position);
+    }
+
+    public void EffectMathari()
+    {
+        effectMatahari.SetActive(true);
+        effectMatahari.transform.position = effectMatahariPos.transform.position;
+        audioSource.PlayOneShot(swooshClip[UnityEngine.Random.Range(0, swooshClip.Length - 1)]);
+        LeanTween.move(effectMatahari, targetPosition, 1f).setOnComplete(() => audioSource.PlayOneShot(co2Clip));
+        LeanTween.delayedCall(1f, () => effectMatahari.SetActive(false));
+    }
+
+    public void HideSerapCO2()
+    {
+        for (int i = 0; i < effectObjects.Length; i++)
+        {
+           effectObjects[i].gameObject.SetActive(false);
+        }
+    }
+
+    public void ShowSerapCO2()
+    {
+        for (int i = 0; i < effectObjects.Length; i++)
+        {
+            effectObjects[i].gameObject.SetActive(true);
+        }
+    }
+
     void EndGame()
     {
         Time.timeScale = 0;
@@ -463,26 +613,19 @@ public class GameManager : MonoBehaviour
         string nilai = "";
         int totalScore = fotosintesisEnergy;
 
-        if (totalScore >= 360) nilai = "A";
-        else if (totalScore >= 240) nilai = "B";
-        else if (totalScore >= 180) nilai = "C";
-        else if (totalScore >= 120) nilai = "D";
+        if (totalScore >= 240) nilai = "A";
+        else if (totalScore >= 180) nilai = "B";
+        else if (totalScore >= 120) nilai = "C";
+        else if (totalScore >= 60) nilai = "D";
         else nilai = "E";
 
         panelHasil.SetActive(true);
-        //hasilText.text = $"Tanaman mencapai level {levelTanaman}/5\n" +
-        //                 $"Energi: {fotosintesisEnergy}\n" +
-        //                 $"Oksigen: {oksigenTotal}\n" +
-        //                 $"Hari Efektif: {currentDay - 1}\n" +
-        //                 $"Nilai Akhir: {nilai}\n" +
-        //                 $"Total Skor: {totalScore} \n";
-
         hariText.text = "Hari bertahan hidup : " + currentDay + "/10";
         airText.text = "Siraman Air : " + airTotal + "x";
         cahayaText.text = "Serapan Cahaya : " + $"{cahayaString}" + " (" + Math.Round(((float)cahayaTotal / 30) * 100f) + "%" + ")" ;
         co2Text.text = "Pengambilan C02 : " + $"{co2String}" + " (" + Math.Round(((float)co2Total / 30) * 100f) + "%" + ")" ;
         oksigenText.text = "Jumlah oksigen dihasilkan : " + Math.Round(((float)oksigenTotal / 100) * 100f) + "%";
-        fotosintesisText.text = "Tingkat efisiensi : " + Math.Round(((float)fotosintesisEnergy / 360) * 100f) + "%";
+        fotosintesisText.text = "Tingkat efisiensi : " + Math.Round(((float)fotosintesisEnergy / 300) * 100f) + "%";
         nilaiAkhirText.text = "Nilai Akhir : " + nilai;
         skorTotalText.text = "Total Skor : " + totalScore;
 
